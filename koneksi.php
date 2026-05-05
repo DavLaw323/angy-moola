@@ -14,6 +14,6 @@ if ($koneksi->connect_error) {
     die("Koneksi Database Gagal: " . $koneksi->connect_error);
 } else {
     // Jika berhasil, pesan ini akan muncul (Bisa dihapus nanti kalau sudah tahap produksi)
-    echo "Mantap! Koneksi ke database angy_moola_db berhasil.";
+    // echo "Mantap! Koneksi ke database angy_moola_db berhasil.";
 }
 ?>
