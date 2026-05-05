@@ -1,0 +1,85 @@
+<?php
+session_start();
+require_once 'koneksi.php';
+
+if (!isset($_SESSION['id_user'])) {
+    exit("Akses ditolak.");
+}
+
+$id_user = $_SESSION['id_user'];
+$tahun_pilih = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
+
+// Trik ajaib PHP: Mengubah output HTML menjadi file Excel (.xls)
+header("Content-type: application/vnd-ms-excel");
+header("Content-Disposition: attachment; filename=Buku_Kas_AngyMoola_$tahun_pilih.xls");
+header("Pragma: no-cache");
+header("Expires: 0");
+
+$query_bukukas = "SELECT t.*, sc.nama_sub, c.nama_kategori, c.tipe 
+                  FROM transactions t 
+                  JOIN sub_categories sc ON t.id_sub_kategori = sc.id_sub 
+                  JOIN categories c ON sc.id_kategori = c.id_kategori 
+                  WHERE t.id_user = '$id_user' AND YEAR(t.tanggal_transaksi) = '$tahun_pilih' 
+                  ORDER BY t.tanggal_transaksi ASC, t.id_transaksi ASC";
+$result_bukukas = $koneksi->query($query_bukukas);
+?>
+
+<!-- Kita pakai HTML biasa, Excel pintar membacanya menjadi tabel -->
+<table border="1">
+    <thead>
+        <tr>
+            <th colspan="6" style="font-size: 18px; font-weight: bold; text-align: center; background-color: #e0e0e0;">
+                Buku Kas AngyMoola - Tahun <?= $tahun_pilih ?>
+            </th>
+        </tr>
+        <tr style="background-color: #f2f2f2;">
+            <th>No</th>
+            <th>Tanggal</th>
+            <th>Keterangan</th>
+            <th>Kategori</th>
+            <th>Masuk (Debit)</th>
+            <th>Keluar (Kredit)</th>
+            <th>Saldo Berjalan</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php 
+        $no = 1;
+        $saldo_berjalan = 0;
+        $total_masuk = 0;
+        $total_keluar = 0;
+
+        if($result_bukukas->num_rows > 0) { 
+            while($row = $result_bukukas->fetch_assoc()) { 
+                if ($row['tipe'] == 'Income') {
+                    $saldo_berjalan += $row['nominal'];
+                    $total_masuk += $row['nominal'];
+                    $masuk = $row['nominal'];
+                    $keluar = 0;
+                } else {
+                    $saldo_berjalan -= $row['nominal'];
+                    $total_keluar += $row['nominal'];
+                    $masuk = 0;
+                    $keluar = $row['nominal'];
+                }
+        ?>
+        <tr>
+            <td style="text-align: center;"><?= $no++ ?></td>
+            <td><?= date('d-m-Y', strtotime($row['tanggal_transaksi'])) ?></td>
+            <td><?= $row['keterangan'] ?></td>
+            <td><?= $row['nama_sub'] ?></td>
+            <td style="text-align: right;"><?= $masuk ?></td>
+            <td style="text-align: right;"><?= $keluar ?></td>
+            <td style="text-align: right; font-weight: bold;"><?= $saldo_berjalan ?></td>
+        </tr>
+        <?php } } ?>
+    </tbody>
+    <tfoot>
+        <tr style="background-color: #e0e0e0; font-weight: bold;">
+            <td colspan="4" style="text-align: right;">TOTAL KESELURUHAN</td>
+            <td style="text-align: right;"><?= $total_masuk ?></td>
+            <td style="text-align: right;"><?= $total_keluar ?></td>
+            <td style="text-align: right;"><?= $saldo_berjalan ?></td>
+        </tr>
+    </tfoot>
+</table>
