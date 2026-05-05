@@ -18,8 +18,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $query = "INSERT INTO users (nama_lengkap, email, password) VALUES ('$nama', '$email', '$hashed_password')";
 
     if ($koneksi->query($query) === TRUE) {
-        $pesan = "<div class='alert alert-success'>Registrasi berhasil! Silakan lanjut ke halaman Login.</div>";
-    } else {
+        // Ubah sedikit teksnya biar lebih interaktif
+        $pesan = "<div class='alert alert-success'>Registrasi berhasil! Mengalihkan ke halaman Login dalam 2 detik...</div>";
+    
+        // Tambahkan script JS untuk redirect otomatis
+        $pesan .= "<script>
+                     setTimeout(function() {
+                         window.location.href = 'login.php';
+                     }, 2000);
+                   </script>";
+    }
+     else {
         $pesan = "<div class='alert alert-danger'>Terjadi kesalahan: " . $koneksi->error . "</div>";
     }
 }
