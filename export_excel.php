@@ -9,7 +9,7 @@ if (!isset($_SESSION['id_user'])) {
 $id_user = $_SESSION['id_user'];
 $tahun_pilih = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
 
-// Trik ajaib PHP: Mengubah output HTML menjadi file Excel (.xls)
+// Header agar browser mendownload sebagai file Excel
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=Buku_Kas_AngyMoola_$tahun_pilih.xls");
 header("Pragma: no-cache");
@@ -24,22 +24,21 @@ $query_bukukas = "SELECT t.*, sc.nama_sub, c.nama_kategori, c.tipe
 $result_bukukas = $koneksi->query($query_bukukas);
 ?>
 
-<!-- Kita pakai HTML biasa, Excel pintar membacanya menjadi tabel -->
 <table border="1">
     <thead>
         <tr>
-            <th colspan="6" style="font-size: 18px; font-weight: bold; text-align: center; background-color: #e0e0e0;">
-                Buku Kas AngyMoola - Tahun <?= $tahun_pilih ?>
+            <th colspan="7" style="font-size: 16px; font-weight: bold; text-align: center; background-color: #D9EAD3; height: 30px;">
+                LAPORAN BUKU KAS ANGYMOOLA - TAHUN <?= $tahun_pilih ?>
             </th>
         </tr>
-        <tr style="background-color: #f2f2f2;">
-            <th>No</th>
-            <th>Tanggal</th>
-            <th>Keterangan</th>
-            <th>Kategori</th>
-            <th>Masuk (Debit)</th>
-            <th>Keluar (Kredit)</th>
-            <th>Saldo Berjalan</th>
+        <tr style="background-color: #f2f2f2; font-weight: bold; text-align: center;">
+            <th width="50">No</th>
+            <th width="120">Tanggal</th>
+            <th width="250">Keterangan</th>
+            <th width="150">Kategori</th>
+            <th width="150">Masuk (Debit)</th>
+            <th width="150">Keluar (Kredit)</th>
+            <th width="150">Saldo Berjalan</th>
         </tr>
     </thead>
     <tbody>
@@ -65,21 +64,32 @@ $result_bukukas = $koneksi->query($query_bukukas);
         ?>
         <tr>
             <td style="text-align: center;"><?= $no++ ?></td>
-            <td><?= date('d-m-Y', strtotime($row['tanggal_transaksi'])) ?></td>
-            <td><?= $row['keterangan'] ?></td>
-            <td><?= $row['nama_sub'] ?></td>
-            <td style="text-align: right;"><?= $masuk ?></td>
-            <td style="text-align: right;"><?= $keluar ?></td>
-            <td style="text-align: right; font-weight: bold;"><?= $saldo_berjalan ?></td>
+            <td style="text-align: center;"><?= date('d-m-Y', strtotime($row['tanggal_transaksi'])) ?></td>
+            <td><?= htmlspecialchars($row['keterangan']) ?></td>
+            <td><?= htmlspecialchars($row['nama_sub']) ?></td>
+            
+            <!-- Perhatikan style mso-number-format:"\@" di bawah ini -->
+            <td style='mso-number-format:"\@"; text-align: right;'>
+                <?= $masuk > 0 ? number_format($masuk, 0, ',', '.') : '-' ?>
+            </td>
+            <td style='mso-number-format:"\@"; text-align: right;'>
+                <?= $keluar > 0 ? number_format($keluar, 0, ',', '.') : '-' ?>
+            </td>
+            <td style='mso-number-format:"\@"; text-align: right; font-weight: bold;'>
+                <?= number_format($saldo_berjalan, 0, ',', '.') ?>
+            </td>
         </tr>
-        <?php } } ?>
+        <?php 
+            } 
+        } 
+        ?>
     </tbody>
     <tfoot>
-        <tr style="background-color: #e0e0e0; font-weight: bold;">
-            <td colspan="4" style="text-align: right;">TOTAL KESELURUHAN</td>
-            <td style="text-align: right;"><?= $total_masuk ?></td>
-            <td style="text-align: right;"><?= $total_keluar ?></td>
-            <td style="text-align: right;"><?= $saldo_berjalan ?></td>
+        <tr style="background-color: #f2f2f2; font-weight: bold;">
+            <td colspan="4" style="text-align: right; height: 25px;">TOTAL KESELURUHAN : </td>
+            <td style='mso-number-format:"\@"; text-align: right; color: green;'><?= number_format($total_masuk, 0, ',', '.') ?></td>
+            <td style='mso-number-format:"\@"; text-align: right; color: red;'><?= number_format($total_keluar, 0, ',', '.') ?></td>
+            <td style='mso-number-format:"\@"; text-align: right; background-color: #fff2cc;'><?= number_format($saldo_berjalan, 0, ',', '.') ?></td>
         </tr>
     </tfoot>
 </table>
