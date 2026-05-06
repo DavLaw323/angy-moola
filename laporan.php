@@ -80,7 +80,7 @@ $result_bukukas = $koneksi->query($query_bukukas);
 <div class="container mt-4 mb-5">
     
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4><i class="bi bi-bar-chart-line"></i> Laporan Keuangan <?= $tahun_pilih ?></h4>
+        <h4><i class="bi bi-bar-chart-line"></i> Laporan Keuangan aja <?= $tahun_pilih ?></h4>
         
         <div class="d-flex gap-2">
             <!-- Form Filter Tahun -->
