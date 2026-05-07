@@ -10,16 +10,35 @@ if (!isset($_SESSION['id_user'])) {
 $id_user = $_SESSION['id_user'];
 $pesan = "";
 
-// Proses simpan transaksi
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+// 1. PROSES TAMBAH DOMPET/REKENING BARU (DARI MODAL POP-UP)
+if (isset($_POST['tambah_akun'])) {
+    $nama_akun_baru = $_POST['nama_akun_baru'];
+    
+    $query_akun = "INSERT INTO accounts (id_user, nama_akun) VALUES ('$id_user', '$nama_akun_baru')";
+    if ($koneksi->query($query_akun) === TRUE) {
+        $pesan = "<div class='alert alert-success shadow-sm border-0' style='border-left: 5px solid #0ba360 !important;'>
+                    <i class='bi bi-check-circle-fill me-2'></i> Rekening <strong>$nama_akun_baru</strong> berhasil ditambahkan!
+                  </div>";
+    } else {
+        $pesan = "<div class='alert alert-danger shadow-sm border-0' style='border-left: 5px solid #cb2d3e !important;'>
+                    <i class='bi bi-exclamation-triangle-fill me-2'></i> Gagal menambah rekening: " . $koneksi->error . "
+                  </div>";
+    }
+}
+
+// 2. PROSES SIMPAN TRANSAKSI
+if (isset($_POST['simpan_transaksi'])) {
     $tanggal = $_POST['tanggal_transaksi'];
     $id_account = $_POST['id_account'];
     $id_sub_kategori = $_POST['id_sub_kategori'];
-    $nominal = $_POST['nominal'];
     $keterangan = $_POST['keterangan'];
+    
+    // Membersihkan titik dari inputan nominal
+    $nominal_kotor = $_POST['nominal'];
+    $nominal_bersih = str_replace('.', '', $nominal_kotor); 
 
     $query = "INSERT INTO transactions (id_user, id_account, id_sub_kategori, nominal, tanggal_transaksi, keterangan) 
-              VALUES ('$id_user', '$id_account', '$id_sub_kategori', '$nominal', '$tanggal', '$keterangan')";
+              VALUES ('$id_user', '$id_account', '$id_sub_kategori', '$nominal_bersih', '$tanggal', '$keterangan')";
 
     if ($koneksi->query($query) === TRUE) {
         $pesan = "<div class='alert alert-success shadow-sm border-0' style='border-left: 5px solid #0ba360 !important;'>
@@ -27,13 +46,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                   </div>";
     } else {
         $pesan = "<div class='alert alert-danger shadow-sm border-0' style='border-left: 5px solid #cb2d3e !important;'>
-                    <i class='bi bi-exclamation-triangle-fill me-2'></i> Gagal: " . $koneksi->error . "
+                    <i class='bi bi-exclamation-triangle-fill me-2'></i> Gagal mencatat: " . $koneksi->error . "
                   </div>";
     }
 }
 
-// Ambil data Akun/Dompet
-$query_accounts = "SELECT * FROM accounts WHERE id_user = '$id_user'";
+// Ambil data Akun/Dompet yang terbaru
+$query_accounts = "SELECT * FROM accounts WHERE id_user = '$id_user' ORDER BY id_account DESC";
 $result_accounts = $koneksi->query($query_accounts);
 
 // Ambil data Kategori
@@ -78,7 +97,6 @@ $result_kategori = $koneksi->query($query_kategori);
             padding: 1.5rem 2rem;
         }
 
-        /* Form Styling */
         .form-floating > .form-control,
         .form-floating > .form-select {
             border-radius: 12px;
@@ -106,14 +124,18 @@ $result_kategori = $koneksi->query($query_kategori);
             color: white;
         }
 
-        .input-group-text {
-            border-radius: 12px 0 0 12px;
-            background-color: #f8f9fa;
-            border-right: none;
+        /* Styling Tombol Plus Baru */
+        .btn-add-wallet {
+            border-radius: 12px;
+            border: 1px dashed #2a5298;
+            color: #2a5298;
+            background: rgba(42, 82, 152, 0.05);
+            transition: all 0.2s;
         }
-
-        .has-icon .form-control {
-            border-left: none;
+        
+        .btn-add-wallet:hover {
+            background: #2a5298;
+            color: white;
         }
     </style>
 </head>
@@ -147,14 +169,27 @@ $result_kategori = $koneksi->query($query_kategori);
                             <label for="tgl" class="text-muted"><i class="bi bi-calendar-event me-1"></i> Tanggal Transaksi</label>
                         </div>
 
-                        <div class="form-floating mb-3">
-                            <select name="id_account" class="form-select" id="acc" required>
-                                <option value="" selected disabled>Pilih Dompet...</option>
-                                <?php while($row = $result_accounts->fetch_assoc()) { ?>
-                                    <option value="<?= $row['id_account'] ?>"><?= $row['nama_akun'] ?></option>
-                                <?php } ?>
-                            </select>
-                            <label for="acc" class="text-muted"><i class="bi bi-credit-card me-1"></i> Gunakan Dompet</label>
+                        <div class="d-flex gap-2 mb-3">
+                            <div class="form-floating flex-grow-1">
+                                <select name="id_account" class="form-select" id="acc" required>
+                                    <option value="" selected disabled>Pilih Dompet...</option>
+                                    <?php 
+                                    // Tampilkan dompet jika ada, jika tidak, biarkan kosong
+                                    if($result_accounts->num_rows > 0) {
+                                        while($row = $result_accounts->fetch_assoc()) { 
+                                    ?>
+                                        <option value="<?= $row['id_account'] ?>"><?= $row['nama_akun'] ?></option>
+                                    <?php 
+                                        } 
+                                    }
+                                    ?>
+                                </select>
+                                <label for="acc" class="text-muted"><i class="bi bi-credit-card me-1"></i> Gunakan Dompet</label>
+                            </div>
+                            
+                            <button type="button" class="btn btn-add-wallet px-3" data-bs-toggle="modal" data-bs-target="#modalTambahDompet" title="Tambah Dompet Baru">
+                                <i class="bi bi-plus-lg fs-5"></i>
+                            </button>
                         </div>
 
                         <div class="form-floating mb-3">
@@ -172,8 +207,8 @@ $result_kategori = $koneksi->query($query_kategori);
                         </div>
 
                         <div class="form-floating mb-3">
-                            <input type="number" name="nominal" class="form-control" id="nom" placeholder="0" required min="0">
-                            <label for="nom" class="text-muted"><i class="bi bi-cash-stack me-1"></i> Nominal (Rp)</label>
+                            <input type="text" name="nominal" class="form-control" id="inputNominal" placeholder="0" required>
+                            <label for="inputNominal" class="text-muted"><i class="bi bi-cash-stack me-1"></i> Nominal (Rp)</label>
                         </div>
 
                         <div class="form-floating mb-4">
@@ -181,7 +216,7 @@ $result_kategori = $koneksi->query($query_kategori);
                             <label for="ket" class="text-muted"><i class="bi bi-pencil-square me-1"></i> Keterangan (Opsional)</label>
                         </div>
 
-                        <button type="submit" class="btn btn-save w-100 text-white shadow-sm">
+                        <button type="submit" name="simpan_transaksi" class="btn btn-save w-100 text-white shadow-sm">
                             <i class="bi bi-check2-circle me-2"></i> SIMPAN TRANSAKSI
                         </button>
                     </form>
@@ -192,6 +227,60 @@ $result_kategori = $koneksi->query($query_kategori);
     </div>
 </div>
 
+<div class="modal fade" id="modalTambahDompet" tabindex="-1" aria-labelledby="modalTambahDompetLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 1.2rem; border: none;">
+      
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-primary" id="modalTambahDompetLabel"><i class="bi bi-wallet2 me-2"></i>Tambah Dompet Baru</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <form method="POST" action="">
+          <div class="modal-body">
+              <p class="text-muted small mb-3">Tambahkan rekening bank, *e-wallet*, atau jenis penyimpanan uang lainnya (Misal: BCA, DANA, Uang Tunai).</p>
+              
+              <div class="form-floating mb-2">
+                  <input type="text" name="nama_akun_baru" class="form-control" id="namaAkun" placeholder="Nama Dompet" required style="border-radius: 10px;">
+                  <label for="namaAkun" class="text-muted">Nama Rekening / Dompet</label>
+              </div>
+          </div>
+          
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" name="tambah_akun" class="btn btn-primary rounded-pill px-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">Simpan Dompet</button>
+          </div>
+      </form>
+      
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    var inputNominal = document.getElementById('inputNominal');
+
+    inputNominal.addEventListener('keyup', function(e) {
+        inputNominal.value = formatRupiah(this.value);
+    });
+
+    function formatRupiah(angka) {
+        var number_string = angka.replace(/[^,\d]/g, '').toString(),
+        split   = number_string.split(','),
+        sisa    = split[0].length % 3,
+        rupiah  = split[0].substr(0, sisa),
+        ribuan  = split[0].substr(sisa).match(/\d{3}/gi);
+
+        if (ribuan) {
+            separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        return rupiah;
+    }
+</script>
+
 </body>
 </html>
