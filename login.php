@@ -1,11 +1,8 @@
 <?php
-// 1. Mulai Session (Harus diletakkan di baris paling atas)
 session_start();
-
-// 2. Panggil koneksi database
 require_once 'koneksi.php';
 
-// Jika user sudah login, arahkan langsung ke halaman dashboard
+// Jika sudah login, langsung lempar ke dashboard
 if (isset($_SESSION['id_user'])) {
     header("Location: dashboard.php");
     exit;
@@ -13,36 +10,27 @@ if (isset($_SESSION['id_user'])) {
 
 $pesan = "";
 
-// 3. Logika saat tombol login ditekan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
-    $password_input = $_POST['password'];
+    $password = $_POST['password'];
 
-    // Cari data user di database berdasarkan email yang diinput
     $query = "SELECT * FROM users WHERE email = '$email'";
     $result = $koneksi->query($query);
 
-    // Cek apakah email ditemukan
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc(); // Ambil data user
-        
-        // 4. Verifikasi Password: Cek apakah password input cocok dengan password acak di database
-        if (password_verify($password_input, $user['password'])) {
+        $row = $result->fetch_assoc();
+        // Cek password hash
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['id_user'] = $row['id_user'];
+            $_SESSION['nama_lengkap'] = $row['nama_lengkap'];
             
-            // 5. Buat Session (Kartu Identitas)
-            $_SESSION['id_user'] = $user['id_user'];
-            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-            
-            // 6. Arahkan ke halaman utama (Dashboard)
             header("Location: dashboard.php");
             exit;
         } else {
-            // Jika password salah
-            $pesan = "<div class='alert alert-danger'>Password yang Anda masukkan salah!</div>";
+            $pesan = "<div class='alert alert-danger shadow-sm rounded-3'><i class='bi bi-exclamation-octagon'></i> Password yang kamu masukkan salah!</div>";
         }
     } else {
-        // Jika email tidak ada di database
-        $pesan = "<div class='alert alert-warning'>Email belum terdaftar. Silakan daftar dulu!</div>";
+        $pesan = "<div class='alert alert-danger shadow-sm rounded-3'><i class='bi bi-person-x'></i> Email belum terdaftar, yuk daftar dulu!</div>";
     }
 }
 ?>
@@ -53,45 +41,111 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - AngyMoola</title>
-    <!-- CSS Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* Desain Background Gradient Modern */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Efek Glassmorphism (Kaca) pada Kartu Login */
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            box-shadow: 0 1rem 3rem rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 3rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .brand-icon {
+            font-size: 3.5rem;
+            background: -webkit-linear-gradient(#667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Animasi Keren pada Tombol */
+        .btn-login {
+            background: linear-gradient(to right, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.5rem 1rem rgba(118, 75, 162, 0.4);
+            color: white;
+        }
+
+        /* Menghaluskan Input Box */
+        .form-control {
+            border-radius: 0.8rem;
+            border: 1px solid #dee2e6;
+            padding: 1rem 0.75rem;
+        }
+        
+        .form-control:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-success text-white text-center py-3">
-                    <h4 class="mb-0">Masuk AngyMoola</h4>
-                </div>
-                <div class="card-body p-4">
-                    
-                    <!-- Menampilkan pesan error jika ada -->
-                    <?= $pesan ?>
-
-                    <!-- Ingat autocomplete="off" agar tidak otomatis diisi browser -->
-                    <form method="POST" action="" autocomplete="off">
-                        <div class="mb-3">
-                            <label for="email" class="form-label text-muted">Alamat Email</label>
-                            <input type="email" name="email" id="email" class="form-control" required placeholder="nama@email.com">
-                        </div>
-                        <div class="mb-4">
-                            <label for="password" class="form-label text-muted">Password</label>
-                            <input type="password" name="password" id="password" class="form-control" autocomplete="new-password" required placeholder="Masukkan password Anda">
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 py-2">Masuk</button>
-                    </form>
-                    
-                    <div class="mt-3 text-center">
-                        <small class="text-muted">Belum punya akun? <a href="register.php" class="text-success">Daftar di sini</a></small>
-                    </div>
-
-                </div>
-            </div>
+<div class="container d-flex justify-content-center">
+    <div class="login-card text-center slide-up">
+        
+        <div class="mb-4">
+            <i class="bi bi-wallet2 brand-icon d-block"></i>
+            <h3 class="fw-bold mt-2 mb-1" style="color: #2d3748;">AngyMoola</h3>
+            <p class="text-muted small">Selamat datang kembali! Silakan masuk ke akunmu.</p>
         </div>
+
+        <?= $pesan ?>
+
+        <form method="POST" action="">
+            
+            <div class="form-floating mb-3 text-start">
+                <input type="email" class="form-control" id="floatingEmail" name="email" placeholder="nama@email.com" required>
+                <label for="floatingEmail" class="text-muted"><i class="bi bi-envelope me-1"></i> Alamat Email</label>
+            </div>
+            
+            <div class="form-floating mb-4 text-start">
+                <input type="password" class="form-control" id="floatingPassword" name="password" placeholder="Password" required>
+                <label for="floatingPassword" class="text-muted"><i class="bi bi-lock me-1"></i> Password</label>
+            </div>
+            
+            <button type="submit" class="btn btn-login w-100 mb-3">
+                <i class="bi bi-box-arrow-in-right me-2"></i> MASUK SEKARANG
+            </button>
+        </form>
+
+        <div class="mt-4 pt-3 border-top">
+            <p class="text-muted small mb-0">Belum punya akun AngyMoola? <br>
+                <a href="register.php" class="fw-bold text-decoration-none" style="color: #764ba2;">Daftar di sini sekarang!</a>
+            </p>
+        </div>
+
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
