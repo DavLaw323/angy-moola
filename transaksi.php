@@ -172,7 +172,7 @@ $result_kategori = $koneksi->query($query_kategori);
                         <div class="d-flex gap-2 mb-3">
                             <div class="form-floating flex-grow-1">
                                 <select name="id_account" class="form-select" id="acc" required>
-                                    <option value="" selected disabled>Pilih Dompet...</option>
+                                    <option value="" selected disabled>Jenis Dompet...</option>
                                     <?php 
                                     // Tampilkan dompet jika ada, jika tidak, biarkan kosong
                                     if($result_accounts->num_rows > 0) {
